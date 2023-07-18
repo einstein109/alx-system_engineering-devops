@@ -1,6 +1,8 @@
-# Kills the killmenow process.
+# Kills a process with puppet
 
-exec { 'killmenow':
-  command => 'pkill killmenow',
-  path    => '/usr/local/bin/:/usr/bin:/bin/',
+exec { 'pkill killmenow':
+  path     => '/usr/bin',
+  command  => 'pkill killmenow',
+  provider => shell,
+  returns  => [0, 1]
 }

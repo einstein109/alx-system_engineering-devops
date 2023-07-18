@@ -1,34 +1,50 @@
 #!/usr/bin/env bash
-# Installs Nginx with the following configurations:
-#+    Listens on port 80.
-#+    Returns a page containing "Hello World!" when queried
-#+     at the root with a curl GET request.
-# Configures /redirect_me as a "301 Moved Permanently".
-# Includes a custom 404 page containing "Ceci n'est pas une page".
+# configure web-02 to be identical to web-01
+# The name of the custom HTTP header must be X-Served-By
+# The value of the custom HTTP header must be the hostname of the server Nginx is running on
+#!/usr/bin/env bash
 
-sudo apt-get update
-sudo apt-get install -y nginx
+# Update package repositories
+sudo apt-get -y update
 
-sudo mkdir /etc/nginx/html
-sudo touch /etc/nginx/html/index.html
-echo "Hello World!" > /etc/nginx/html/index.html
-sudo touch /etc/nginx/html/404.html
-echo "Ceci n'est pas une page" > /etc/nginx/html/404.html
+# Install Nginx
+sudo apt-get -y install nginx
 
-printf %s "server {
-    listen 80;
+# Allow Nginx HTTP traffic
+sudo ufw allow 'Nginx HTTP'
+
+# Create necessary directories and set permissions
+sudo mkdir -p /var/www/html /var/www/error
+sudo chmod -R 755 /var/www
+
+# Create index and 404 pages
+echo 'Hello World!' | sudo tee /var/www/html/index.html >/dev/null
+echo "Ceci n'est pas une page" | sudo tee /var/www/html/404.html >/dev/null
+
+# Configure Nginx with custom header
+server_config=$(cat <<EOF
+server {
+    listen 80 default_server;
     listen [::]:80 default_server;
-    add_header X-Served-By $HOSTNAME;
-    root   /etc/nginx/html;
-    index  index.html index.htm;
-    location /redirect_me {
-        return 301 https://www.youtube.com/watch?v=QH2-TGUlwu4;
+    root /var/www/html;
+    index index.html index.htm index.nginx-debian.html;
+    server_name _;
+    add_header X-Served-By \$hostname;
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
+    if (\$request_filename ~ redirect_me) {
+        rewrite ^ https://youtube.com permanent;
     }
     error_page 404 /404.html;
-    location /404 {
-      root /etc/nginx/html;
-      internal;
+    location = /404.html {
+        internal;
     }
-}" > /etc/nginx/sites-available/default
+}
+EOF
+)
 
+echo "$server_config" | sudo tee /etc/nginx/sites-enabled/default >/dev/null
+
+# Restart Nginx service
 sudo service nginx restart

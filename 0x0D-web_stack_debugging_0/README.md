@@ -1,6 +1,1 @@
-# Web stack debugging #0
-
-
-
-### Tasks
-0. Give me a page! 
+0x0D-web_stack_debugging_0
