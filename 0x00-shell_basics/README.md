@@ -1,1 +1,1 @@
-Display the contents list of your current directory in a long format
+# 0x00-shell_basics
