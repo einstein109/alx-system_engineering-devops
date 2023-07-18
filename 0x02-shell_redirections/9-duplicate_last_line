@@ -1,2 +1,6 @@
 #!/bin/bash
+<<<<<<< HEAD
 tail -1 iacta >> iacta
+=======
+tail -1 < iacta >> iacta
+>>>>>>> 2627377147f2ee08e99b68354d2ad29d77f57a69
