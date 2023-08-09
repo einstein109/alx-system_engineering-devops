@@ -3,21 +3,34 @@
 Contains the number_of_subscribers function
 """
 
+import requests
+
 def number_of_subscribers(subreddit):
-  # Set a custom User-Agent header to avoid errors
-  headers = {"User-Agent": "Bing Chat Bot"}
-  # Construct the URL for the subreddit
-  url = "https://www.reddit.com/r/" + subreddit + "/about.json"
-  # Send a GET request to the URL and get the response
-  response = requests.get(url, headers=headers)
-  # Check if the response status code is 200 (OK)
-  if response.status_code == 200:
-    # Parse the JSON data from the response
-    data = response.json()
-    # Get the number of subscribers from the data
-    subscribers = data["data"]["subscribers"]
-    # Return the number of subscribers
-    return subscribers
-  else:
-    # If the response status code is not 200, return 0
-    return 0
+    # Set a custom User-Agent to avoid Too Many Requests errors
+    headers = {'User-Agent': 'Custom User-Agent'}
+    
+    # Create the API URL for the subreddit's information
+    url = f'https://www.reddit.com/r/{subreddit}/about.json'
+    
+    try:
+        # Send a GET request to the Reddit API
+        response = requests.get(url, headers=headers)
+        
+        # Check if the response status code is OK
+        if response.status_code == 200:
+            # Parse the JSON response
+            data = response.json()
+            
+            # Extract the number of subscribers from the response
+            subscribers = data['data']['subscribers']
+            
+            return subscribers
+        elif response.status_code == 404:
+            # Subreddit not found
+            return 0
+        else:
+            # Handle other error cases
+            return 0
+    except requests.RequestException:
+        # Handle network errors
+        return 0
