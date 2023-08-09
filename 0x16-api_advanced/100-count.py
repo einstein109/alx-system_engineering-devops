@@ -4,45 +4,46 @@ sorted count of given keywords(case-insensitive, delimited by spaces.
 Javascript should count as javascript, but java should not).
 """
 import requests
-import operator
 
+def count_words(subreddit, word_list, after=None, counts=None):
+    if counts is None:
+        counts = {}
 
-def count_words(subreddit, word_list=[], word_dict={}, after=None):
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) Apple' +
-        'WebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36'
-    }
-    r = requests.get('https://www.reddit.com/r/{:}/hot.json?after={:}'.format(
-        subreddit, after), headers=headers, allow_redirects=False)
-    if r.status_code == 200:
-        json = r.json()
-        data_dict = json.get('data')
-        post_list = data_dict.get('children')
-        for post in post_list:
-            post_data_dict = post.get('data')
-            for word in word_list:
-                title = post_data_dict.get('title').split()
-                title_copy = []
-                for j in title:
-                    title_copy.append(j.upper())
-                count = title_copy.count(word.upper())
-                if word_dict.get(word):
-                    word_dict[word] += count
-                else:
-                    word_dict[word] = count
-        after = data_dict.get('after')
-        if data_dict.get('after') is None:
-            sorted_list = sorted(word_dict.items(), key=operator.itemgetter(1),
-                                 reverse=True)
-            for i in range(len(sorted_list) - 1):
-                if sorted_list[i][1] == sorted_list[i+1][1]:
-                    if sorted_list[i][0] > sorted_list[i+1][0]:
-                        sorted_list[i], sorted_list[i+1] = sorted_list[
-                            i+1], sorted_list[i]
-            for item in sorted_list:
-                if item[1] > 0:
-                    print("{:}: {:}".format(item[0], item[1]))
-            return
-        return count_words(subreddit, word_list, word_dict, after)
-    else:
-        return
+    headers = {'User-Agent': 'Custom User-Agent'}
+    url = f'https://www.reddit.com/r/{subreddit}/hot.json'
+    params = {'after': after} if after else {}
+
+    try:
+        response = requests.get(url, headers=headers, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            posts = data['data']['children']
+            
+            if not posts:
+                print_results(counts)
+                return
+            
+            for post in posts:
+                title = post['data']['title'].lower()
+                for word in word_list:
+                    normalized_word = normalize_word(word)
+                    if normalized_word in title:
+                        if normalized_word in counts:
+                            counts[normalized_word] += 1
+                        else:
+                            counts[normalized_word] = 1
+            
+            after = data['data']['after']
+            count_words(subreddit, word_list, after, counts)
+        else:
+            print_results(counts)
+    except requests.RequestException:
+        print_results(counts)
+
+def normalize_word(word):
+    return word.lower().strip('.!_')
+
+def print_results(counts):
+    sorted_counts = sorted(counts.items(), key=lambda x: (-x[1], x[0]))
+    for word, count in sorted_counts:
+        print(f"{word}: {count}")
